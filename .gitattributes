@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.cgi text eol=lf
+*.py text eol=lf
+*.go text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.lst text eol=lf
+S99xd20xray text eol=lf
+xray.gz binary
+ax3-manager binary
+ax3-gunzip binary
+ax3-sync binary
+dnsmasq binary
+httpd binary
+df binary

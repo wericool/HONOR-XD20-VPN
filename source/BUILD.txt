@@ -1,0 +1,62 @@
+ИСХОДНИКИ МЕНЕДЖЕРА И МИНИМАЛЬНОГО SYNC-HELPER
+
+Публичный ax3-manager собран из исходников router-manager в этой папке.
+От действующей сборки отличается общей подписью fallback «Текущий сервер»
+и флагами -trimpath -ldflags "-s -w". Серверов и подписок автора здесь нет.
+
+Использованный компилятор: Go 1.27.1, с локальным изменением Linux netpoll.
+На проверенном ядре eventfd возвращал ENOSYS; wakeup заменён pipe2.
+Нельзя просто повторить сборку с другим Go, не проверив runtime на устройстве.
+
+После установки отдельного Go 1.27.1 патч применяется на компьютере:
+
+python patch-go-netpoll.py PATH_TO_GO_1.27.1_ROOT
+
+Патч сохраняет исходник runtime/netpoll_epoll.go.official. Он проверяет
+ожидаемые фрагменты и отказывается работать с неизвестным исходным кодом.
+Работай с отдельной копией Go, чтобы не менять компилятор других проектов.
+
+PowerShell; cd в source/router-manager. Задай собственный каталог GOCACHE:
+
+$env:GO111MODULE = 'off'
+$env:GOCACHE = (Join-Path $env:TEMP 'xd20-go-cache')
+& 'PATH_TO_GO_1.27.1_ROOT\bin\go.exe' test
+& 'PATH_TO_GO_1.27.1_ROOT\bin\go.exe' vet
+$env:GOOS = 'linux'
+$env:GOARCH = 'arm'
+$env:GOARM = '7,softfloat'
+$env:CGO_ENABLED = '0'
+$files = Get-ChildItem -Filter '*.go' | Where-Object { $_.Name -notmatch '_test.go$|^detach_other.go$' } | ForEach-Object { $_.Name }
+& 'PATH_TO_GO_1.27.1_ROOT\bin\go.exe' build -trimpath -ldflags '-s -w' -o ax3-manager $files
+
+Явный список файлов нужен для нейтрального package path command-line-arguments:
+без него GOPATH-сборка может записать каталог компьютера в build metadata,
+даже если пути исходников очищены флагом -trimpath. detach_other.go исключён
+только из сборки для Linux; detach_linux.go содержит реализацию для роутера.
+
+Сборка менеджера не запускает VPN на компьютере и не обращается к роутеру.
+В Windows тесты запускаются до задания GOOS=linux.
+
+Отдельный ARM EABI5 sync helper состоит из syscall sync и exit:
+
+python build-arm-sync.py NEW_OUTPUT_FILE
+
+Его ожидаемый SHA256:
+798b5006c391844e6a6d78fb79800feebbaf93cd0668ff526bbb5750eb10c48a
+
+БИНАРНИКИ ДРУГИХ ПРОЕКТОВ
+
+xray.gz — community-сборка Xray 26.9.8 с TUN/gVisor и XHTTP, исходная основа:
+ax3-awg31-v9.1.4-xray.tar. Содержимое согласуется с manifest исходного пакета;
+это не подтверждение независимого аудита всех изменений автора binary.
+Полного патча локальных изменений gVisor в исходном пакете не было.
+Обычный официальный Xray не обещается как совместимая замена.
+Пост автора: https://4pda.to/forum/index.php?showtopic=989679&view=findpost&p=145141920
+
+ax3-gunzip, httpd, dnsmasq и cacert.pem — проверенные на XD20 вспомогательные
+файлы, перенесённые из подготовленного набора. Этот каталог не содержит
+полного дерева исходников сторонних проектов. Не представляй весь набор
+как полностью воспроизводимую исходную сборку всех binary.
+
+Штатные native UI assets сохранены и изменены только для дополнительного
+маршрута и пункта меню. Штатный вход HONOR не объединяется с входом панели.

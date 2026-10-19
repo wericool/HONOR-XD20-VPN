@@ -1,0 +1,12 @@
+#!/bin/sh
+# XD20_XRAY_BOOT_HOOK_V1: only the external controller runs the VPN services.
+umask 077
+case "${1:-start}" in
+    stop) ;;
+    *)
+        if [ -f /data/xray-test/autostart.enabled ] && [ -f /data/xray-test/xrayctl.sh ]; then
+            sh /data/xray-test/xrayctl.sh boot </dev/null >> /tmp/xd20-xray-boot.log 2>&1 &
+        fi
+        ;;
+esac
+exit 0

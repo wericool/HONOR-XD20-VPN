@@ -1,0 +1,23 @@
+# Never publish generated credentials or device state.
+reader-private/
+*-private/
+BACKUP*/
+research/
+Subs/
+Sites.txt
+Neiro_router.txt
+xray.json
+seed.json
+httpd-private.conf
+subscriptions*.json
+public-state.json
+hwid
+*.log
+*.new
+*.previous
+*.zip
+*.bin
+__pycache__/
+*.pyc
+build-cache/
+build-tmp/

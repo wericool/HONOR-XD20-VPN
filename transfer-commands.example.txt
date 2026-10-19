@@ -1,0 +1,130 @@
+ПРИМЕР ПЕРЕНОСА ДЛЯ ЧИСТОЙ УСТАНОВКИ
+
+Не выполняй этот список на роутере, где уже есть /data/xray-test,
+/data/xray-manager или /data/patch. Сначала прочти основной гайд и диагностику.
+Это список отдельных команд, а не автоматический установщик.
+
+Стандартные адреса: HONOR 192.168.3.1, компьютер 192.168.3.3.
+HTTP-сервер на компьютере должен слушать 80 порт и обслуживать корень KIT.
+Собственные xray.json, seed.json, httpd-private.conf должны быть подготовлены
+скриптом prepare-private.py в подпапке reader-private. Эти файлы секретные.
+Параметр -l использует маленькую латинскую букву l, не цифру 1.
+Команды вводятся в root shell роутера, после отдельных shell и su.
+
+mkdir -p /data/xray-test/web/cgi-bin
+chmod 700 /data/xray-test /data/xray-test/web /data/xray-test/web/cgi-bin
+
+wget -g -v -l /data/xray-test/ax3-gunzip -r /ax3-gunzip 192.168.3.3
+wget -g -v -l /data/xray-test/ax3-sync -r /ax3-sync 192.168.3.3
+wget -g -v -l /data/xray-test/ax3-manager -r /ax3-manager 192.168.3.3
+wget -g -v -l /data/xray-test/dnsmasq -r /dnsmasq 192.168.3.3
+wget -g -v -l /data/xray-test/httpd -r /httpd 192.168.3.3
+wget -g -v -l /data/xray-test/xray.gz -r /xray.gz 192.168.3.3
+wget -g -v -l /data/xray-test/cacert.pem -r /cacert.pem 192.168.3.3
+wget -g -v -l /data/xray-test/xrayctl.sh -r /xrayctl.sh 192.168.3.3
+wget -g -v -l /data/xray-test/xray-route.sh -r /xray-route.sh 192.168.3.3
+wget -g -v -l /data/xray-test/xray-dns.sh -r /xray-dns.sh 192.168.3.3
+wget -g -v -l /data/xray-test/xray-web.sh -r /xray-web.sh 192.168.3.3
+wget -g -v -l /data/xray-test/xray-switch.sh -r /xray-switch.sh 192.168.3.3
+wget -g -v -l /data/xray-test/xray-switch-watch.sh -r /xray-switch-watch.sh 192.168.3.3
+wget -g -v -l /data/xray-test/xray-web-reload.sh -r /xray-web-reload.sh 192.168.3.3
+wget -g -v -l /data/xray-test/domain.lst -r /domain.lst 192.168.3.3
+wget -g -v -l /data/xray-test/ip.lst -r /ip.lst 192.168.3.3
+wget -g -v -l /data/xray-test/mode -r /mode 192.168.3.3
+wget -g -v -l /data/xray-test/web/index.html -r /sites-index.html 192.168.3.3
+wget -g -v -l /data/xray-test/web/cgi-bin/sites.cgi -r /sites.cgi 192.168.3.3
+wget -g -v -l /data/xray-test/web/cgi-bin/manager.cgi -r /manager.cgi 192.168.3.3
+wget -g -v -l /data/xray-test/xray.json -r /reader-private/xray.json 192.168.3.3
+wget -g -v -l /data/xray-test/seed.json -r /reader-private/seed.json 192.168.3.3
+wget -g -v -l /data/xray-test/httpd-private.conf -r /reader-private/httpd-private.conf 192.168.3.3
+
+chmod 700 /data/xray-test/ax3-gunzip /data/xray-test/ax3-sync /data/xray-test/ax3-manager
+chmod 700 /data/xray-test/dnsmasq /data/xray-test/httpd
+chmod 700 /data/xray-test/xrayctl.sh /data/xray-test/xray-route.sh /data/xray-test/xray-dns.sh
+chmod 700 /data/xray-test/xray-web.sh /data/xray-test/xray-switch.sh /data/xray-test/xray-switch-watch.sh /data/xray-test/xray-web-reload.sh
+chmod 700 /data/xray-test/web/cgi-bin/sites.cgi /data/xray-test/web/cgi-bin/manager.cgi
+chmod 600 /data/xray-test/xray.json /data/xray-test/seed.json /data/xray-test/httpd-private.conf
+chmod 600 /data/xray-test/domain.lst /data/xray-test/ip.lst /data/xray-test/mode /data/xray-test/cacert.pem /data/xray-test/xray.gz /data/xray-test/web/index.html
+
+Сверь wc -c каждого файла с колонкой Bytes в MANIFEST.tsv и исходным файлом на компьютере.
+Размер не заменяет SHA256; SHA256SUMS.txt проверяется на компьютере до HTTP-передачи.
+Проверка скриптов и заполнение реестра собственным сервером:
+
+sh -n /data/xray-test/xrayctl.sh
+sh -n /data/xray-test/xray-route.sh
+sh -n /data/xray-test/xray-dns.sh
+sh -n /data/xray-test/xray-web.sh
+sh -n /data/xray-test/xray-switch.sh
+sh -n /data/xray-test/xray-switch-watch.sh
+/data/xray-test/ax3-manager version
+GOMAXPROCS=1 GOMEMLIMIT=6MiB /data/xray-test/ax3-manager seed < /data/xray-test/seed.json
+GOMAXPROCS=1 GOMEMLIMIT=6MiB /data/xray-test/ax3-manager action state
+/data/xray-test/ax3-sync
+
+Открыть панель можно после запуска httpd; VPN пока ещё не включён:
+
+sh /data/xray-test/xray-web.sh start
+
+Проверка начального конфигурационного файла и самого VPN:
+
+sh /data/xray-test/xrayctl.sh test
+sh /data/xray-test/xrayctl.sh start
+GOMAXPROCS=1 GOMEMLIMIT=6MiB /data/xray-test/ax3-manager probe
+
+Продолжай только при успешной TLS-проверке. Выборочный пробный режим имеет
+автоматический откат маршрутов через 120 секунд. Проверь YouTube на телефоне,
+подключённом к HONOR, с выключенным VPN на телефоне. Затем отдельно commit:
+
+sh /data/xray-test/xrayctl.sh selective trial
+sh /data/xray-test/xrayctl.sh commit
+
+Неудача/аварийный полный откат наших служб и правил:
+
+sh /data/xray-test/xrayctl.sh rollback
+
+АВТОЗАПУСК — только после успешных ручных проверок выше.
+Первый reboot должен пройти с ОТСУТСТВУЮЩИМ autostart.enabled.
+Установщик ниже НЕ включает VPN и НЕ перезагружает устройство сам.
+
+wget -g -v -l /data/xray-test/install-xray-overlay.sh -r /install-xray-overlay.sh 192.168.3.3
+sh /data/xray-test/install-xray-overlay.sh
+reboot
+
+После загрузки снова shell и su; проверить /etc overlay, RO /patch, hook:
+
+cat /proc/mounts
+ls -l /etc/rc.d/S99xd20xray /patch/etc /patch/patch.ver
+sh /data/xray-test/xrayctl.sh status
+
+После проверки штатной сети и overlay:
+
+sh /data/xray-test/xrayctl.sh selective permanent
+GOMAXPROCS=1 GOMEMLIMIT=6MiB /data/xray-test/ax3-manager probe
+sh /data/xray-test/xrayctl.sh enable-autostart
+/data/xray-test/ax3-sync
+GOMAXPROCS=1 GOMEMLIMIT=6MiB /data/xray-test/ax3-manager action state
+
+НЕОБЯЗАТЕЛЬНЫЙ ПУНКТ В ШТАТНОМ МЕНЮ — только после /etc overlay.
+Этот установщик использует /xd20-ui-router.js, /xd20-ui-store.js,
+/xd20-ui-view.js из того же HTTP-каталога. Нужна ещё одна перезагрузка.
+
+wget -g -v -l /data/xray-test/install-xray-html-overlay.sh -r /install-xray-html-overlay.sh 192.168.3.3
+sh /data/xray-test/install-xray-html-overlay.sh
+/data/xray-test/ax3-sync
+reboot
+
+После загрузки проверь http://192.168.3.1:8088/ и обычный вход HONOR,
+затем http://192.168.3.1/html/index.html#/more/xray (при необходимости Ctrl+F5).
+Пункт меню открывает панель отдельной вкладкой: iframe запрещён штатной CSP.
+
+Когда собственный реестр создан и всё проверено, удалить только временный seed:
+
+rm -f /data/xray-test/seed.json
+/data/xray-test/ax3-sync
+
+Удали reader-private из каталога HTTP-сервера на компьютере, останови временный
+сервер и удали его временное firewall-правило. Сохрани собственные конфиги
+в отдельном приватном месте. Не публикуй их и не добавляй их в общий архив.
+
+Запуск новых файлов с чистого состояния повторно на втором физическом роутере
+не проверялся. Компоненты и порядок основаны на работающей установке XD20.
